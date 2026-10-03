@@ -1,0 +1,3 @@
+sinricpro>=2.0.0
+busylib
+python-dotenv>=1.0.0

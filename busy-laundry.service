@@ -1,0 +1,17 @@
+[Unit]
+Description=BUSY Bar Google Home Laundry Bridge
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/busy-laundry
+ExecStart=/home/pi/busy-laundry/venv/bin/python /home/pi/busy-laundry/laundry_bridge.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
