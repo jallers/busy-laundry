@@ -31,7 +31,6 @@ _active_triggers: set[str] = set()
 async def send_to_busy_bar(text: str, is_clear: bool = False) -> bool:
     # 1. Try busylib if installed
     try:
-        # pyrefly: ignore [missing-import]
         from busylib import AsyncBusyBar
         from busylib.features import notify
         token_arg = config.BUSY_BAR_TOKEN if config.BUSY_BAR_TOKEN else None
@@ -191,7 +190,6 @@ async def run_daemon():
         sys.exit(1)
 
     try:
-        # pyrefly: ignore [missing-import]
         from sinricpro import SinricPro, SinricProSwitch, SinricProConfig
     except ImportError:
         logger.error("The 'sinricpro' package is not installed. Run: pip install -r requirements.txt")
