@@ -7,6 +7,7 @@ and displays custom status notifications on your BUSY Bar LED matrix.
 
 import sys
 import json
+import signal
 import logging
 import asyncio
 import urllib.request
@@ -228,16 +229,71 @@ async def run_daemon():
         app_secret=config.SINRIC_APP_SECRET
     )
 
+    sp.on_connected(lambda: logger.info("Sinric Pro WebSocket connected."))
+    sp.on_disconnected(lambda: logger.warning("Sinric Pro WebSocket disconnected."))
+
     logger.info("Connecting to Sinric Pro...")
     await sp.begin(sinric_config)
+
+    if hasattr(signal, "SIGUSR1"):
+        def _force_disconnect():
+            logger.info("Received SIGUSR1: closing WebSocket to test reconnection...")
+            if sp.websocket and sp.websocket.ws:
+                asyncio.create_task(sp.websocket.ws.close())
+
+        asyncio.get_running_loop().add_signal_handler(signal.SIGUSR1, _force_disconnect)
 
     logger.info("Connected to Sinric Pro!")
     logger.info(f"Target BUSY Bar IP : {config.BUSY_BAR_IP}")
     logger.info("Ready and listening for Google Home laundry routines...")
 
+    max_reconnect_failures = 10
+    consecutive_failures = 0
+    base_backoff = 10
+
     try:
         while True:
-            await asyncio.sleep(3600)
+            await asyncio.sleep(10)
+
+            if sp.is_connected():
+                consecutive_failures = 0
+                continue
+
+            # Wait if the SDK's built-in 5-second reconnect task is still in flight
+            reconnect_task = getattr(sp.websocket, "_reconnect_task", None) if sp.websocket else None
+            if reconnect_task is not None and not reconnect_task.done():
+                continue
+
+            consecutive_failures += 1
+            if consecutive_failures > max_reconnect_failures:
+                logger.error(
+                    f"Failed to reconnect to Sinric Pro after {max_reconnect_failures} attempts. "
+                    "Exiting so systemd can restart the service cleanly."
+                )
+                sys.exit(1)
+
+            backoff = min(base_backoff * (2 ** (consecutive_failures - 1)), 60)
+            logger.warning(
+                f"Sinric Pro is disconnected (SDK auto-reconnect exhausted). "
+                f"Retry {consecutive_failures}/{max_reconnect_failures} in {backoff}s..."
+            )
+            await asyncio.sleep(backoff)
+
+            if sp.is_connected():
+                consecutive_failures = 0
+                continue
+
+            if sp.websocket:
+                try:
+                    sp.websocket._stop_heartbeat()
+                    await sp.websocket.connect()
+                    logger.info("Successfully reconnected to Sinric Pro!")
+                    consecutive_failures = 0
+                except Exception as e:
+                    logger.error(f"Reconnect attempt {consecutive_failures} failed: {e}")
+            else:
+                logger.error("Sinric Pro WebSocket client not initialized; exiting for restart.")
+                sys.exit(1)
     except asyncio.CancelledError:
         pass
     finally:
