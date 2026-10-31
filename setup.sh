@@ -51,5 +51,5 @@ fi
 
 echo "====================================================="
 echo " Setup complete! "
-echo " Test with: ./venv/bin/python laundry_bridge.py --test-washer"
+echo " Test with: ./venv/bin/python laundry_bridge.py --test"
 echo "====================================================="

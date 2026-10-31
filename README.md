@@ -120,24 +120,26 @@ Update (or create) your voice-activated laundry automations in Google Home:
    BUSY_BAR_IP=192.168.1.150
    SINRIC_APP_KEY=your_key_here
    SINRIC_APP_SECRET=your_secret_here
-   # Option 1: Unified switch (recommended)
-   LAUNDRY_DEVICE_ID=your_laundry_device_id
-   # Option 2: Separate switches
-   # WASHER_DEVICE_ID=your_washer_device_id
-   # DRYER_DEVICE_ID=your_dryer_device_id
-   LAUNDRY_ALERT_TEXT=Laundry done
+   # Separate washer and dryer switches with custom BUSY Bar alert text
+   DEVICE_WASHER_ID=your_washer_device_id
+   DEVICE_WASHER_TEXT=ROTATE DRYER
+   DEVICE_DRYER_ID=your_dryer_device_id
+   DEVICE_DRYER_TEXT=FOLD LAUNDRY
+   # Optional: Online-only Sinric Pro switch (no BUSY Bar alert)
+   # DEVICE_OFFICE_LAMP_ID=your_office_lamp_device_id
    ALERT_SOUND=event
    ALERT_TIMEOUT_SECONDS=1800
    ```
 
 5. **Test the display immediately:**
    ```bash
-   # Test the unified laundry notification (with checkmark and sound)
-   ./venv/bin/python laundry_bridge.py --test
+   # List configured Sinric Pro devices
+   ./venv/bin/python laundry_bridge.py --list-devices
 
-   # Test washer or dryer alerts specifically
-   ./venv/bin/python laundry_bridge.py --test-washer
-   ./venv/bin/python laundry_bridge.py --test-dryer
+   # Test notification on screen (defaults to first configured device alert or custom text)
+   ./venv/bin/python laundry_bridge.py --test
+   ./venv/bin/python laundry_bridge.py --test washer
+   ./venv/bin/python laundry_bridge.py --test dryer
 
    # Clear the screen
    ./venv/bin/python laundry_bridge.py --clear
@@ -163,12 +165,8 @@ Update (or create) your voice-activated laundry automations in Google Home:
 | Variable | Default | Description |
 |---|---|---|
 | `BUSY_BAR_IP` | `192.168.1.100` | Local network IP address of your BUSY Bar |
-| `LAUNDRY_DEVICE_ID` | *(empty)* | Sinric Pro device ID for unified laundry switch |
-| `WASHER_DEVICE_ID` | *(empty)* | Sinric Pro device ID for washer switch |
-| `DRYER_DEVICE_ID` | *(empty)* | Sinric Pro device ID for dryer switch |
-| `DEVICE_<NAME>_ID` | *(empty)* | Any additional Sinric Pro switch ID to keep online/active in Google Home |
+| `DEVICE_<NAME>_ID` | *(empty)* | Sinric Pro switch ID to connect and keep online/active in Google Home |
 | `DEVICE_<NAME>_TEXT` | *(empty)* | Optional BUSY Bar alert text for `DEVICE_<NAME>_ID` (omit for online-only switches) |
-| `LAUNDRY_ALERT_TEXT` | `Laundry done` | Notification text displayed on matrix |
 | `ALERT_SOUND` | `event` | Sound played on BUSY Bar (`event`, `reminder`, `volume`, or empty) |
 | `ALERT_TIMEOUT_SECONDS` | `1800` (30 mins) | Time until message automatically disappears |
 

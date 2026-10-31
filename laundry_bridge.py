@@ -156,24 +156,6 @@ def make_device_callback(device: config.DeviceConfig):
     return _on_state_change
 
 
-async def on_laundry_state_change(*args, **kwargs) -> bool:
-    """Callback when 'Laundry' unified switch state changes in Google Home."""
-    dev = config.DeviceConfig("laundry", "Laundry", config.LAUNDRY_DEVICE_ID, config.LAUNDRY_ALERT_TEXT)
-    return await make_device_callback(dev)(*args, **kwargs)
-
-
-async def on_washer_state_change(*args, **kwargs) -> bool:
-    """Callback when 'Washer Alert' switch state changes in Google Home."""
-    dev = config.DeviceConfig("washer", "Washer", config.WASHER_DEVICE_ID, config.WASHER_ALERT_TEXT)
-    return await make_device_callback(dev)(*args, **kwargs)
-
-
-async def on_dryer_state_change(*args, **kwargs) -> bool:
-    """Callback when 'Dryer Alert' switch state changes in Google Home."""
-    dev = config.DeviceConfig("dryer", "Dryer", config.DRYER_DEVICE_ID, config.DRYER_ALERT_TEXT)
-    return await make_device_callback(dev)(*args, **kwargs)
-
-
 async def run_daemon():
     """Runs the Sinric Pro listener daemon."""
     errors = config.validate_config(require_sinric=True)
@@ -201,10 +183,7 @@ async def run_daemon():
         logger.info(f"Registered Sinric Pro switch: {dev.name} ({dev.device_id}) [{mode_desc}]")
 
     if not devices:
-        logger.error(
-            "No valid Sinric Pro device IDs configured. "
-            "Please set DEVICE_<NAME>_ID or LAUNDRY/WASHER/DRYER_DEVICE_ID in .env"
-        )
+        logger.error("No valid Sinric Pro device IDs configured. Please set DEVICE_<NAME>_ID in .env")
         sys.exit(1)
 
     sinric_config = SinricProConfig(
@@ -287,17 +266,22 @@ def main():
     """CLI handler for testing and starting the service."""
     if len(sys.argv) > 1:
         arg = sys.argv[1].lower()
-        if arg in ("--test", "-t", "--test-laundry"):
-            print(f"Testing laundry notification: '{config.LAUNDRY_ALERT_TEXT}' (sound: '{config.ALERT_SOUND}') -> {config.BUSY_BAR_IP}")
-            asyncio.run(send_to_busy_bar(config.LAUNDRY_ALERT_TEXT))
-            return
-        elif arg in ("--test-washer", "--washer", "-w"):
-            print(f"Testing washer alert: '{config.WASHER_ALERT_TEXT}' -> {config.BUSY_BAR_IP}")
-            asyncio.run(send_to_busy_bar(config.WASHER_ALERT_TEXT))
-            return
-        elif arg in ("--test-dryer", "--dryer", "-d"):
-            print(f"Testing dryer alert: '{config.DRYER_ALERT_TEXT}' -> {config.BUSY_BAR_IP}")
-            asyncio.run(send_to_busy_bar(config.DRYER_ALERT_TEXT))
+        if arg in ("--test", "-t"):
+            target_key = sys.argv[2].lower() if len(sys.argv) > 2 else None
+            devices = config.load_devices()
+            text = "Laundry done"
+            if target_key:
+                matched = next((d for d in devices if d.key == target_key), None)
+                if matched and matched.alert_text:
+                    text = matched.alert_text
+                else:
+                    text = sys.argv[2]
+            else:
+                first_alert = next((d.alert_text for d in devices if d.alert_text), None)
+                if first_alert:
+                    text = first_alert
+            print(f"Testing notification: '{text}' (sound: '{config.ALERT_SOUND}') -> {config.BUSY_BAR_IP}")
+            asyncio.run(send_to_busy_bar(text))
             return
         elif arg in ("--clear", "-c"):
             print(f"Clearing alert display on {config.BUSY_BAR_IP}")
@@ -315,12 +299,10 @@ def main():
             return
         elif arg in ("--help", "-h"):
             print("Usage:")
-            print("  python laundry_bridge.py                Run 24/7 background listener")
-            print("  python laundry_bridge.py --list-devices List all configured Sinric Pro devices")
-            print("  python laundry_bridge.py --test         Test unified laundry notification with sound")
-            print("  python laundry_bridge.py --test-washer  Test washer notification on screen")
-            print("  python laundry_bridge.py --test-dryer   Test dryer notification on screen")
-            print("  python laundry_bridge.py --clear        Clear current alert on screen")
+            print("  python laundry_bridge.py                 Run 24/7 background listener")
+            print("  python laundry_bridge.py --list-devices  List all configured Sinric Pro devices")
+            print("  python laundry_bridge.py --test [device] Test BUSY Bar notification (for device key or custom text)")
+            print("  python laundry_bridge.py --clear         Clear current alert on screen")
             return
         else:
             print(f"Unknown argument: {arg}")
