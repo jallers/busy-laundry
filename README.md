@@ -166,6 +166,8 @@ Update (or create) your voice-activated laundry automations in Google Home:
 | `LAUNDRY_DEVICE_ID` | *(empty)* | Sinric Pro device ID for unified laundry switch |
 | `WASHER_DEVICE_ID` | *(empty)* | Sinric Pro device ID for washer switch |
 | `DRYER_DEVICE_ID` | *(empty)* | Sinric Pro device ID for dryer switch |
+| `DEVICE_<NAME>_ID` | *(empty)* | Any additional Sinric Pro switch ID to keep online/active in Google Home |
+| `DEVICE_<NAME>_TEXT` | *(empty)* | Optional BUSY Bar alert text for `DEVICE_<NAME>_ID` (omit for online-only switches) |
 | `LAUNDRY_ALERT_TEXT` | `Laundry done` | Notification text displayed on matrix |
 | `ALERT_SOUND` | `event` | Sound played on BUSY Bar (`event`, `reminder`, `volume`, or empty) |
 | `ALERT_TIMEOUT_SECONDS` | `1800` (30 mins) | Time until message automatically disappears |
